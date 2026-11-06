@@ -1,6 +1,6 @@
 # FreeTube
 
-This branch replaces LNPopupUI with a public-API SwiftUI mini player for the reported iOS 27.2 launch crash. **Xcode compilation and device verification are pending.** See [修复报告](docs/FIX_REPORT.zh-CN.md). The included GitHub Actions workflow builds an unsigned, SideStore-re-signable `FreeTube-fixed.ipa` without an Apple account.
+This branch replaces LNPopupUI with a public-API SwiftUI mini player for the reported iOS 27.2 launch crash. **Release arm64 compilation and IPA package verification passed in [GitHub Actions](https://github.com/liljz808/freetube/actions/runs/42268855040); iOS 27.2 device verification is pending.** See [修复报告](docs/FIX_REPORT.zh-CN.md). The included GitHub Actions workflow builds an unsigned, SideStore-re-signable `FreeTube-fixed.ipa` without an Apple account.
 
 A native SwiftUI YouTube client for iOS. Cookie-based auth, AVPlayer playback, offline downloads, no Google API key.
 

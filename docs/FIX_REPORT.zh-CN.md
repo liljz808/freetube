@@ -2,13 +2,14 @@
 
 记录日期：2026-11-07（北京时间）。
 
-**交付状态：修复候选源码已完成；尚未通过 Xcode 编译，尚未生成 IPA，尚未完成 iOS 27.2 真机验证。**
+**交付状态：修复候选已通过 macOS/Xcode Release arm64 编译，已生成并取回 FreeTube-fixed.ipa，真实 IPA 校验通过；尚未完成 iOS 27.2 真机验证。**
 
 ## 基线与问题
 
 - 源仓库：https://github.com/leshkodev/freetube
 - 克隆时 main 的提交：`8fc6d3b7be9571e3ffcb179de3d1de2dfe7012e7`。
-- 本地修改分支：`fix/ios27-popup-crash`。
+- 修复分支：https://github.com/liljz808/freetube/tree/fix/ios27-popup-crash 。
+- 实际构建源码提交：`21833f0d84017961ab8039a98228d27e89de257a`；后续文档提交不改变该二进制的来源。
 - 用户报告环境：iOS 27.2（24B119）；LiveContainer 和 SideStore 独立安装均启动失败。
 - 异常文字：`This can only be called by an approved app.`
 - 用户提供的栈涉及 LNPopupUI、UITabBarController、`_ln_proposedFrameForPopupBar`、`_ln_popupOffsetForPopupBar:`。
@@ -84,9 +85,8 @@
 | `scripts/check-source.py` | 通过 | 源码和依赖图移除了 popup 链；后台模式存在。 |
 | Bash 脚本语法、`git diff --check` | 通过 | 构建脚本尚待在 macOS 执行。 |
 | 本环境运行构建脚本 | 被阻塞，退出码 69 | Linux 环境没有 xcodebuild；真实输出见 build-evidence/local-build-attempt.txt。 |
-| GitHub 网页登录 | 未成功 | 通行密钥不受支持；账号密码安全表单提交后站点返回浏览器异常，未到两步验证码页面。没有在聊天中接收密码或验证码。 |
-| macOS Actions 编译 | 待提交后执行 | 已检测到 liljz808/freetube Fork，并确认写入权限；将通过现有连接提交，不再依赖网页登录。 |
-| 真实 IPA 内容校验 | 未执行 | 没有真实 IPA；不会把合成测试包当作 IPA 交付。 |
+| macOS Actions 编译 | **通过** | Run 42268855040；Xcode 26.6 / Apple Swift 6.3.3 / iPhoneOS 26.5 SDK；Release arm64，日志含 BUILD SUCCEEDED。 |
+| 真实 IPA 内容校验 | **通过** | Runner 校验后上传；取回后再次运行检查器，通过；IPA 的 SHA-256 与构建端一致。 |
 | iOS 27.2（24B119）真机验证 | 未执行 | 无该设备访问；无法确认异常已在真机消失。 |
 
 源仓库虽在 README 中提到 FreeTubeTests，但克隆内容中没有对应 XCTest 源码/测试 target；本次没有虚构执行 xcodebuild test。
@@ -105,11 +105,22 @@
 
 IPA 是供 SideStore 重新签名的未签名包，不能直接作为企业签名包安装。CI 检查失败会停止发布 IPA；失败日志仍上传。
 
-继续推进所缺少的账号操作：用户在自己的 GitHub 账号下 Fork 源仓库，并让现有 GitHub 连接能够访问该 Fork。随后可以提交该修复分支并利用 macOS Actions 实际编译、排查编译错误和下载产物。若 GitHub App 缺少 workflow 写入或 Actions 权限，需要补齐对应权限；当前尚未提交，不能预先保证这部分权限已具备。
+本次云端构建已结束且成功，无需额外 Apple 或 GitHub 认证。构建日志与产物：
 
-更新：已检测到 `liljz808/freetube` Fork，现有连接具备写入权限；不再需要网页登录，正在提交修复并推进 macOS Actions。
+- 构建运行：https://github.com/liljz808/freetube/actions/runs/42268855040
+- 源码提交：https://github.com/liljz808/freetube/commit/21833f0d84017961ab8039a98228d27e89de257a
+- 构建完成时间：2026-11-07 02:18 左右（北京时间）。
+- IPA 文件大小：22,956,285 字节，约 21.9 MiB。
+- SHA-256：`f8c0adf899a404aaf0198ac07321fe407dffe100348f9f71971d179a43f1e5de`。
+- Bundle ID：`com.leshko.freetube`；版本 1.0（22）；最低 iOS 17.0；iOS device arm64。
 
-## SideStore 安装说明（待 IPA 生成后）
+已核实 `Payload/FreeTube.app/Info.plist`、主可执行文件、PythonSupport/Kingfisher 资源包、JS 资源和本地化资源。没有附带 provisioning profile，供 SideStore 在设备端重新签名。
+
+该产物没有需要嵌入的第三方动态 Frameworks：主 Mach-O 只加载系统库，CPython 和 ffmpeg 静态链接进主程序，核实存在 `_Py_Initialize`、`_avformat_open_input`、`_avcodec_version` 等本地符号。没有 LNPopup 动态框架，也未在二进制中检出被移除的 popup 实现/布局 selector。
+
+编译并非零警告：原项目在 Swift 5 语言模式下仍有主 actor 隔离/Sendable、deprecated API 和未使用变量等警告，Python 头文件有 nullability 警告，链接器报告一条 section alignment 警告。它们未阻止这次构建；没有以“编译通过”推断这些原有路径在 iOS 27.2 上已得到运行验证。完整信息保留在 xcodebuild.log。
+
+## SideStore 安装说明
 
 1. 将 `FreeTube-fixed.ipa` 下载到 iPhone 的“文件”。
 2. 按当前 SideStore 版本要求开启本地连接 VPN；本用户已有 LocalDevVPN 配置，并准备好所需 Wi-Fi 及校园网认证。
@@ -129,4 +140,4 @@ IPA 是供 SideStore 重新签名的未签名包，不能直接作为企业签�
 - GitHub macOS runner 镜像：https://github.com/actions/runner-images/blob/main/images/macos/macos-26-Readme.md
 - Apple BGProcessingTaskRequest：https://developer.apple.com/documentation/backgroundtasks/bgprocessingtaskrequest
 
-所有“源码已移除触发路径”的描述均限定于本修复候选。**没有 Xcode 编译成功记录或 iOS 真机验证记录，不能宣布该崩溃已修复。**
+所有“源码已移除触发路径”的描述均限定于本修复候选。**已有 Xcode 编译和 IPA 检查成功记录，但没有 iOS 27.2 真机运行记录，不能宣布该崩溃已在设备上解决。**

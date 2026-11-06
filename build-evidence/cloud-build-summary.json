@@ -1,0 +1,18 @@
+{
+  "source_commit": "21833f0d84017961ab8039a98228d27e89de257a",
+  "workflow_run_id": 42268855040,
+  "workflow_url": "https://github.com/liljz808/freetube/actions/runs/42268855040",
+  "xcode": "26.6",
+  "swift_compiler": "6.3.3",
+  "sdk": "iphoneos26.5",
+  "configuration": "Release",
+  "architecture": "arm64",
+  "code_signing": "disabled; SideStore must re-sign",
+  "build": "SUCCEEDED",
+  "package_validation": "PASSED on runner and locally",
+  "package_validator_tests": "12 passed",
+  "device_launch": "NOT_TESTED",
+  "ios27_2_features": "NOT_TESTED",
+  "ipa_bytes": 22956285,
+  "ipa_sha256": "f8c0adf899a404aaf0198ac07321fe407dffe100348f9f71971d179a43f1e5de"
+}
