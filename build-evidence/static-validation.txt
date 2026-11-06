@@ -1,0 +1,8 @@
+SWIFT GRAMMAR PASS: App/RootView.swift (not compiler type checking)
+SWIFT GRAMMAR PASS: UI/Player/MiniPlayerBar.swift (not compiler type checking)
+SWIFT GRAMMAR PASS: UI/Player/FullScreenPlayer.swift (not compiler type checking)
+SWIFT GRAMMAR PASS: UI/Player/PlayerSurface.swift (not compiler type checking)
+PBX PROJECT PASS: 35 objects, 51 references resolved
+SHARED SCHEME XML PASS
+PLIST / STRINGS JSON / PACKAGE LOCK JSON PASS
+WORKFLOW YAML PARSE PASS (not executed on GitHub)

@@ -4,9 +4,8 @@ import UIKit
 import OSLog
 import Kingfisher
 
-/// Expanded player content presented by `LNPopupUI` when the popup bar is opened. The popup chrome
-/// (close button) is provided by the library — this view renders the surface, transport controls,
-/// metadata, and the toggleable comments / queue panel below.
+/// Persistent expanded player hosted by RootView using public SwiftUI layout APIs.
+/// Renders the surface, transport controls, metadata, and comments / queue panel.
 @available(iOS 17.0, *)
 struct FullScreenPlayer: View {
     @Environment(PlayerStateManager.self) private var player
@@ -76,26 +75,21 @@ struct FullScreenPlayer: View {
                 // item).
                 ZStack {
                     Color.black
-                    PlayerSurface(player: player.player)
+                    PlayerSurface(player: player.player, restoreInterfaceForPictureInPicture: {
+                        player.fullScreenPresented = true
+                    })
                     DownloadProgressOverlay(state: player.loadState)
                 }
                 .frame(width: proxy.size.width, height: proxy.size.width * 9 / 16)
-            // Pull-down-to-dismiss starting from the video surface.
-            //
-            // `AVPlayerViewController`'s internal `UIPanGestureRecognizer`s (scrubber, system
-            // controls) consume touches before they can reach LNPopupUI's outer pan, so the
-            // library's `.popupInteractionStyle(.drag)` only works when the gesture starts on
-            // SwiftUI views below the video (comments / queue). `.simultaneousGesture` is the
-            // escape hatch: SwiftUI composes this `DragGesture` with the UIKit recognizers
-            // underneath instead of arbitrating between them, so AVPlayerViewController's
-            // controls keep working AND we can detect a downward pull and dismiss the popup
-            // imperatively. LNPopupUI animates the collapse — we just flip the binding.
+            // A simultaneous vertical gesture leaves AVKit's horizontal scrubber usable.
             .simultaneousGesture(
                 DragGesture(minimumDistance: 30, coordinateSpace: .global)
                     .onEnded { value in
                         let mostlyDown = value.translation.height > 90
                             && abs(value.translation.width) < value.translation.height
-                        let fastFlick = value.predictedEndTranslation.height > 180
+                        let fastFlick = value.translation.height > 0
+                            && value.predictedEndTranslation.height > 180
+                            && abs(value.predictedEndTranslation.width) < value.predictedEndTranslation.height
                         if mostlyDown || fastFlick {
                             @Bindable var p = player
                             p.fullScreenPresented = false
@@ -151,9 +145,7 @@ struct FullScreenPlayer: View {
                 .fill(.thinMaterial)
                 .ignoresSafeArea()
         }
-        // Ensure the system status bar stays visible and gets light-content (white) glyphs against
-        // the dark material. LNPopupUI's `LNPopupContentHostingController` is a UIHostingController
-        // subclass that doesn't override status bar style, so SwiftUI's colorScheme drives it.
+        // SwiftUI's dark color scheme supplies the status-bar appearance.
         .preferredColorScheme(.dark)
         .statusBarHidden(false)
         // Presents UIActivityViewController for the "Open in…" menu action. Wrapping shareFileURL
@@ -172,13 +164,6 @@ struct FullScreenPlayer: View {
         .sheet(item: $addToPlaylistVideo) { video in
             AddToPlaylistSheet(videoID: video.id, videoTitle: video.title)
         }
-        // Pull-down-to-dismiss is handled by LNPopupUI via `.popupInteractionStyle(...)` in
-        // RootView. We don't install a custom DragGesture here — it would race with the system
-        // gesture arbitration the popup hosts (and with AVPlayerViewController's own touch
-        // handling once the video surface goes interactive). That was the bug where the
-        // expanded player wouldn't visibly follow the finger during a downward swipe once
-        // playback started; the close was only happening on touch-up.
-
         // Make the VStack fill the GeometryReader's bounds. Without this, the VStack only
         // claims the natural content height (video + transport + divider + panel intrinsic
         // height) and the `.background { thinMaterial }` doesn't extend below that. On
@@ -204,8 +189,7 @@ struct FullScreenPlayer: View {
     // MARK: - Close button
 
     /// Bottom-bar Close pill. iOS 26 ships `.buttonStyle(.glass)` which renders a real
-    /// glass-material capsule — that's what gives it the visual weight that matches the
-    /// `prominentClearGlass` close button LNPopupUI shows in the popup chrome. Pre-iOS-26
+    /// glass-material capsule. Pre-iOS-26
     /// fallback uses `.bordered` with `.regularMaterial` Capsule background — visually
     /// close but not the same liquid-glass effect.
     @ViewBuilder
@@ -227,6 +211,7 @@ struct FullScreenPlayer: View {
             .controlSize(.large)
             .tint(.primary)
             .accessibilityLabel("Close full screen player")
+            .accessibilityIdentifier("fullScreenPlayer.close")
         } else {
             Button {
                 @Bindable var p = player
@@ -237,6 +222,7 @@ struct FullScreenPlayer: View {
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Close full screen player")
+            .accessibilityIdentifier("fullScreenPlayer.close")
         }
     }
 

@@ -1,5 +1,7 @@
 # FreeTube
 
+This branch replaces LNPopupUI with a public-API SwiftUI mini player for the reported iOS 27.2 launch crash. **Xcode compilation and device verification are pending.** See [修复报告](docs/FIX_REPORT.zh-CN.md). The included GitHub Actions workflow builds an unsigned, SideStore-re-signable `FreeTube-fixed.ipa` without an Apple account.
+
 A native SwiftUI YouTube client for iOS. Cookie-based auth, AVPlayer playback, offline downloads, no Google API key.
 
 For personal use, sideload, or TestFlight only — **not** for public App Store submission.
@@ -39,7 +41,7 @@ If you do not agree with these terms, do not install or use this software.
   <tr>
     <td align="center">
       <img src="screenshots/05_player_dj_silviu_intro.jpg" alt="Full-screen player playing a video" width="260"><br>
-      <sub><b>Player</b> · LNPopupUI-driven expanded surface</sub>
+      <sub><b>Player</b> · SwiftUI expanded surface (screenshots predate this fix)</sub>
     </td>
     <td align="center">
       <img src="screenshots/06_player_controls_club_mix.jpg" alt="Native AVPlayer transport controls" width="260"><br>
@@ -106,7 +108,7 @@ If you do not agree with these terms, do not install or use this software.
 
 ## Requirements
 
-- Xcode 15 or later
+- Xcode 26.2 or later (the current source uses Swift 6.2 isolation features)
 - iOS 17.0 or later (real device recommended — Python / yt-dlp work, but Simulator can be flaky for ffmpeg-heavy paths)
 - A Google account (or family-managed account); login is performed inside the app via a WebView
 
@@ -158,7 +160,7 @@ See `CLAUDE.md` § 6 for the exact mapping from YouTubeKit response types to ser
 | Stream extraction | [`kewlbear/YoutubeDL-iOS`](https://github.com/kewlbear/YoutubeDL-iOS) (yt-dlp via PythonKit) |
 | In-process ffmpeg | `FFmpegSupport` |
 | Playback | `AVFoundation` / `AVKit` (`AVQueuePlayer`, `AVPlayerViewController`, `AVPictureInPictureController`) |
-| Mini / expanded player | `LNPopupUI` |
+| Mini / expanded player | SwiftUI safe-area insets + persistent player surface |
 | Now-playing animation | `SwimplyPlayIndicator` |
 | Images | `Kingfisher` |
 | Persistence | `SwiftData` (`@Model` + `@ModelActor` writer for history/favorites/search) + file extended attributes for downloads metadata |
@@ -330,7 +332,7 @@ FreeTube/                    # The Xcode workspace
 
 Read `CLAUDE.md` first — it documents the constraints, conventions, and the workarounds in `Core/` that are easy to break by accident.
 
-Tests live in `FreeTubeTests/` mirroring the source structure. Run them before opening a PR.
+The checked-in upstream project has no XCTest target. Package-validator regression tests live in `tests/`; run `python3 -m unittest discover -s tests -v`. They do not establish Swift compilation or iOS runtime correctness.
 
 ---
 

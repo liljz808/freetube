@@ -1,0 +1,1 @@
+BUILD BLOCKED: macOS with Xcode 26.2+ is required; no IPA was produced.

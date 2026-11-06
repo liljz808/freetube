@@ -10,7 +10,7 @@ This file gives Claude Code the context, constraints, and conventions it must fo
 
 **Distribution:** TestFlight internal, sideload, or personal use. **Not for public App Store submission.** Do not suggest changes that assume App Store distribution.
 
-**Platforms:** iOS 17.0+, Swift 5.9+, Xcode 15+.
+**Platforms:** iOS 17.0+, Xcode 26.2+ (current source uses Swift 6.2 isolation features).
 
 **Bundle identifier:** `com.leshko.freetube`. This is also the reverse-DNS namespace for the `os.Logger` subsystem, the Keychain cookie key (`com.leshko.freetube.cookies`), the `UserDefaults` keys (subscriptions / downloads / metadata), and internal `Notification.Name`s. Keep all of them on this same domain. Changing the identifier invalidates provisioning profiles and resets Keychain / `UserDefaults` state for any prior install.
 
@@ -44,7 +44,7 @@ These come first. Violating them breaks the project.
 | Stream extraction / download | `kewlbear/YoutubeDL-iOS` (yt-dlp via `PythonKit`) |
 | In-process ffmpeg | `FFmpegSupport` (Swift wrapper around ffmpeg C library) |
 | Playback | `AVFoundation` / `AVKit` (`AVQueuePlayer`, `AVPlayerViewController`, `AVPictureInPictureController`) |
-| Mini / expanded player | `LNPopupUI` |
+| Mini / expanded player | SwiftUI safe-area insets + persistent full-screen surface |
 | Now-playing indicator | `SwimplyPlayIndicator` |
 | Login web view | `WebKit` (`WKWebView`, `WKHTTPCookieStore` against ephemeral `.nonPersistent()` data store) |
 | Images | `Kingfisher` |
@@ -223,7 +223,7 @@ enum PlaybackSource {
 ## 8. Player UI rules
 
 - **One `PlayerStateManager`** is the single source of truth for current playback. Injected via SwiftUI `@Environment(PlayerStateManager.self)`.
-- **Mini player and full-screen player are both driven by `LNPopupUI`** — the popup bar above the tab bar expands into a full-screen popup. Same `AVQueuePlayer` instance for both views.
+- **Mini player uses public SwiftUI APIs.** `RootView` insets `MiniPlayerBar` into each tab above the system tab bar and keeps exactly one `FullScreenPlayer` mounted across minimization/tab switches. Both share the same `AVQueuePlayer`. LNPopupUI, LNPopupController and LNSwiftUIUtils were removed to eliminate private UIKit tab accessory layout calls on iOS 27.2; do not reintroduce them. See `docs/FIX_REPORT.zh-CN.md`.
 - **`AVPlayerViewController`** wrapped in `UIViewControllerRepresentable` (`PlayerSurface.swift`) is the video surface. System controls, AirPlay, PiP for free.
 - **`AVQueuePlayer`**, not `AVPlayer`. Required for `advanceToNextItem()` and queue introspection. Important: `replaceCurrentItem(with:)` is a no-op on `AVQueuePlayer` when its internal queue is empty (our usual state). Use `removeAllItems()` + `insert(_:after:)` (see the `loadItem` helper).
 - **Background audio:** `AudioSessionConfigurator` runs at app launch with `(.playback, .moviePlayback)`.
@@ -439,7 +439,7 @@ Current state of the implementation. Items marked ✓ are shipped.
   - `HomeService`, `SearchService` (+ autocomplete), `VideoService`
   - Home screen, Search screen, Video detail screen
   - Three-tier playback resolver (yt-dlp / YouTubeKit / streaming HLS)
-  - `PlayerStateManager`, mini player + full-screen popup (LNPopupUI)
+  - `PlayerStateManager`, mini player + persistent full-screen surface (SwiftUI)
   - Background audio + Now Playing + Remote Command Center
 - **P1 — Account** ✓
   - Login (`WKWebView` ephemeral data store + Keychain)

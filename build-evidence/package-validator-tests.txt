@@ -1,0 +1,17 @@
+test_accepts_arm64_fat_device (test_ipa_validation.PackageValidationTests.test_accepts_arm64_fat_device) ... ok
+test_accepts_embedded_dependency (test_ipa_validation.PackageValidationTests.test_accepts_embedded_dependency) ... ok
+test_device_package_passes_without_claiming_device_test (test_ipa_validation.PackageValidationTests.test_device_package_passes_without_claiming_device_test) ... ok
+test_rejects_missing_background_audio (test_ipa_validation.PackageValidationTests.test_rejects_missing_background_audio) ... ok
+test_rejects_missing_framework (test_ipa_validation.PackageValidationTests.test_rejects_missing_framework) ... ok
+test_rejects_non_executable_binary (test_ipa_validation.PackageValidationTests.test_rejects_non_executable_binary) ... ok
+test_rejects_removed_popup_implementation (test_ipa_validation.PackageValidationTests.test_rejects_removed_popup_implementation) ... ok
+test_rejects_simulator_arm64 (test_ipa_validation.PackageValidationTests.test_rejects_simulator_arm64) ... ok
+test_rejects_simulator_embedded_framework (test_ipa_validation.PackageValidationTests.test_rejects_simulator_embedded_framework) ... ok
+test_rejects_truncated_load_commands (test_ipa_validation.PackageValidationTests.test_rejects_truncated_load_commands) ... ok
+test_rejects_unsafe_archive (test_ipa_validation.PackageValidationTests.test_rejects_unsafe_archive) ... ok
+test_rejects_wrong_architecture (test_ipa_validation.PackageValidationTests.test_rejects_wrong_architecture) ... ok
+
+----------------------------------------------------------------------
+Ran 12 tests in 0.007s
+
+OK

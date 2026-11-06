@@ -13,10 +13,16 @@ struct PlayerSurface: UIViewControllerRepresentable {
     /// and burned battery. The PiP button itself still works because `allowsPictureInPicturePlayback`
     /// stays on. Default is `false` for `entersPiPAutomatically`.
     var entersPiPAutomatically: Bool = false
+    var restoreInterfaceForPictureInPicture: (() -> Void)?
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(restoreInterface: restoreInterfaceForPictureInPicture)
+    }
 
     func makeUIViewController(context: Context) -> AVPlayerViewController {
         let controller = AVPlayerViewController()
         controller.player = player
+        controller.delegate = context.coordinator
         controller.showsPlaybackControls = showsControls
         controller.canStartPictureInPictureAutomaticallyFromInline = entersPiPAutomatically
         controller.allowsPictureInPicturePlayback = true
@@ -27,5 +33,27 @@ struct PlayerSurface: UIViewControllerRepresentable {
         controller.player = player
         controller.showsPlaybackControls = showsControls
         controller.canStartPictureInPictureAutomaticallyFromInline = entersPiPAutomatically
+        context.coordinator.restoreInterface = restoreInterfaceForPictureInPicture
+    }
+
+    /// AVKit asks the app to restore its own player UI when returning from PiP.
+    final class Coordinator: NSObject, AVPlayerViewControllerDelegate {
+        var restoreInterface: (() -> Void)?
+
+        init(restoreInterface: (() -> Void)?) {
+            self.restoreInterface = restoreInterface
+        }
+
+        func playerViewController(
+            _ playerViewController: AVPlayerViewController,
+            restoreUserInterfaceForPictureInPictureStopWithCompletionHandler completionHandler: @escaping (Bool) -> Void
+        ) {
+            guard let restoreInterface else {
+                completionHandler(false)
+                return
+            }
+            restoreInterface()
+            completionHandler(true)
+        }
     }
 }

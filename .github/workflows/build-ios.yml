@@ -1,0 +1,62 @@
+name: Build SideStore IPA
+on:
+  workflow_dispatch:
+  push:
+    branches: [fix/ios27-popup-crash]
+permissions:
+  contents: read
+concurrency:
+  group: freetube-ipa-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  ios:
+    runs-on: macos-26
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Select installed stable Xcode
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import os, pathlib, plistlib
+          candidates = []
+          for app in pathlib.Path('/Applications').glob('Xcode*.app'):
+              if 'beta' in app.name.lower():
+                  continue
+              with (app / 'Contents/Info.plist').open('rb') as f:
+                  info = plistlib.load(f)
+              version = tuple(int(p) for p in info['CFBundleShortVersionString'].split('.'))
+              if version >= (26, 2):
+                  candidates.append((version, str(app / 'Contents/Developer')))
+          if not candidates:
+              raise SystemExit('Runner has no stable Xcode 26.2+; inspect available runner images')
+          version, developer_dir = max(candidates)
+          with open(os.environ['GITHUB_ENV'], 'a') as f:
+              f.write(f'DEVELOPER_DIR={developer_dir}\n')
+          print(f'Selected Xcode {version}: {developer_dir}')
+          PY
+      - name: Compile Release arm64 and verify IPA
+        run: bash scripts/build-ipa.sh
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: FreeTube-fixed
+          path: |
+            build/FreeTube-fixed.ipa
+            build/FreeTube-fixed.ipa.sha256
+            build/ipa-verification.json
+          if-no-files-found: error
+          retention-days: 14
+      - name: Upload build evidence even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: FreeTube-build-evidence
+          path: |
+            build/logs
+            build/Build.xcresult
+            FreeTube/FreeTube.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
+          if-no-files-found: warn
+          retention-days: 14

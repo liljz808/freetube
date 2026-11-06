@@ -124,7 +124,7 @@ final class PlayerStateManager {
     /// the YouTube `WatchHistoryEntry` schema), queue recommendation fill (no related-video
     /// surface for arbitrary URLs), and `ensureDownloaded` (file is on disk).
     /// **What we keep:** `currentVideo` (synthetic so the mini-player title/subtitle still
-    /// render), `miniPlayerVisible` flipped true so LNPopupUI shows the bar, NowPlayingCenter
+    /// render), `miniPlayerVisible` flipped true so RootView shows the bar, NowPlayingCenter
     /// update for lock-screen artwork, and the standard observe/loadItem flow so errors and
     /// playback state still surface through the existing UI.
     func loadLocalFile(at fileURL: URL, title: String, source: String?, thumbnailURL: URL?) {
