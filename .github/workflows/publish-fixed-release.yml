@@ -1,0 +1,68 @@
+name: Publish fixed IPA release
+on:
+  push:
+    branches: [release/ios27-fixed]
+permissions:
+  contents: read
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      actions: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Fetch verified build output
+        uses: actions/download-artifact@v4
+        with:
+          name: FreeTube-fixed
+          path: release-assets
+          run-id: 42268855040
+          github-token: ${{ github.token }}
+      - name: Fetch build logs and xcresult
+        uses: actions/download-artifact@v4
+        with:
+          name: FreeTube-build-evidence
+          path: release-evidence
+          run-id: 42268855040
+          github-token: ${{ github.token }}
+      - name: Verify exact IPA and prepare evidence
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib, json
+          root = Path('release-assets')
+          digest = hashlib.sha256((root / 'FreeTube-fixed.ipa').read_bytes()).hexdigest()
+          expected = 'f8c0adf899a404aaf0198ac07321fe407dffe100348f9f71971d179a43f1e5de'
+          assert digest == expected, 'IPA bytes differ from verified macOS build'
+          assert (root / 'FreeTube-fixed.ipa.sha256').read_text().split()[0] == expected
+          report = json.loads((root / 'ipa-verification.json').read_text())
+          assert report['package_verification'] == 'passed'
+          assert report['device_launch'] == 'NOT_TESTED'
+          (root / 'FreeTube-fixed.ipa.sha256').write_text(f'{digest}  FreeTube-fixed.ipa\n')
+          print(f'Verified IPA SHA-256: {digest}')
+          PY
+          cp docs/FIX_REPORT.zh-CN.md release-assets/FIX_REPORT.zh-CN.md
+          cd release-evidence
+          zip -qr ../release-assets/FreeTube-build-evidence.zip .
+      - name: Publish candidate release
+        shell: bash
+        run: |
+          gh release create ios27.2-fixed-21833f0 \
+            --repo "$GH_REPO" \
+            --target 21833f0d84017961ab8039a98228d27e89de257a \
+            --title 'FreeTube iOS 27.2 compatibility fix — device testing pending' \
+            --notes-file docs/RELEASE_NOTES.zh-CN.md \
+            --prerelease \
+            release-assets/FreeTube-fixed.ipa \
+            release-assets/FreeTube-fixed.ipa.sha256 \
+            release-assets/ipa-verification.json \
+            release-assets/FreeTube-build-evidence.zip \
+            release-assets/FIX_REPORT.zh-CN.md
